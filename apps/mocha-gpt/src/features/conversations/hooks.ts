@@ -46,7 +46,7 @@ export function useUpdateConversation() {
       data,
     }: {
       id: string;
-      data: Pick<Conversation, "title" | "isArchived" | "isPinned">;
+      data: Partial<Pick<Conversation, "title" | "isArchived" | "isPinned">>;
     }) => updateConversation(id, data),
     onSuccess: (conversation) => {
       queryClient.invalidateQueries({
@@ -68,7 +68,7 @@ export function useDeleteConversation(id?: string) {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: ({ id }: { id: string }) => deleteConversation(id),
+    mutationFn: (id: string) => deleteConversation(id),
     onSuccess: (conversation) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.conversations.all,

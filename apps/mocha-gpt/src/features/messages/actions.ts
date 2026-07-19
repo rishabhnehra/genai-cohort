@@ -1,6 +1,6 @@
 "use server";
 
-import { checkConversationExists } from "@/lib/utils";
+import { checkConversationExists } from "../utils";
 import { requiredUser } from "../auth/actions/required-user";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
