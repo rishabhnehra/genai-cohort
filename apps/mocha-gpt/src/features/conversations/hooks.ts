@@ -1,23 +1,16 @@
+"use client";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createConversation,
   deleteConversation,
   listConversations,
   updateConversation,
-} from "./action";
+} from "./actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Conversation } from "@/generated/prisma/browser";
-
-const queryKeys = {
-  conversations: {
-    all: ["conversations"],
-    detail: (id: string) => ["conversations", id],
-  },
-  messages: {
-    byConversation: (conversationId: string) => ["messages", conversationId],
-  },
-};
+import { queryKeys } from "@/lib/utils";
 
 export function useConversations() {
   return useQuery({

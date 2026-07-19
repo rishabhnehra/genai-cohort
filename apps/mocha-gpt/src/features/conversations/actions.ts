@@ -4,19 +4,7 @@ import { prisma } from "@/lib/db";
 import { requiredUser } from "../auth/actions/required-user";
 import { revalidatePath } from "next/cache";
 import { Conversation } from "@/generated/prisma/client";
-
-async function checkConversationExists(conversationId: string, userId: string) {
-  const conversation = await prisma.conversation.findUnique({
-    where: {
-      id: conversationId,
-      userId,
-    },
-  });
-
-  if (!conversation) {
-    throw new Error(`Conversation doesn't exist for ${userId}`);
-  }
-}
+import { checkConversationExists } from "@/lib/utils";
 
 export async function listConversations() {
   const user = await requiredUser();

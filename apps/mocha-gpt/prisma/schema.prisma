@@ -62,8 +62,8 @@ model Message {
   role           MessageRole
   status         MessageStatus @default(COMPLETE)
   content        String // Check if @db.Text is needed
-  parts          Json
-  metadata       Json
+  parts          Json?
+  metadata       Json?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
