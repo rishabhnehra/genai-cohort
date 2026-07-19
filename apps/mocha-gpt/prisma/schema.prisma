@@ -28,7 +28,7 @@ model Conversation {
   id            String   @id @default(cuid())
   userId        String
   title         String   @default("New Chat")
-  model         String
+  model         String?
   systemPrompt  String? // Need to check if @db.text is required.
   isPinned      Boolean  @default(false)
   isArchived    Boolean  @default(false)
