@@ -14,7 +14,8 @@ export type OrchestrateRetrievalResult = {
 
 /**
  * Expand the user query via step-back + sub-queries, resolve each against
- * the vector store, and collect all returned documents. No synthesis yet.
+ * the vector store, and collect all returned documents.
+ * Answer synthesis happens after RRF fusion in the caller.
  */
 export async function orchestrateRetrieval(
   store: VectorStore,

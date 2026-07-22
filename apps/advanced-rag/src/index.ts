@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createSubtitleVectorStore } from "./documents-loader/vector-store.js";
 import { fuseWithRrf } from "./orchestrator/rrf.js";
 import { orchestrateRetrieval } from "./orchestrator/retrieve.js";
+import { generateAnswer } from "./synthesis/generate-answer.js";
 
 async function main() {
   if (!process.env.OPENAI_API_KEY) {
@@ -57,6 +58,11 @@ async function main() {
     console.log(document.pageContent.slice(0, 300));
     console.log();
   }
+
+  const { answer } = await generateAnswer(userQuery, fused);
+  console.log("=== Answer ===\n");
+  console.log(answer);
+  console.log();
 }
 
 main().catch((error) => {
