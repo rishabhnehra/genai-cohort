@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { createSubtitleVectorStore } from "./documents-loader/vector-store.js";
+import { fuseWithRrf } from "./orchestrator/rrf.js";
 import { orchestrateRetrieval } from "./orchestrator/retrieve.js";
 
 async function main() {
@@ -38,6 +39,23 @@ async function main() {
       console.log(document.pageContent.slice(0, 300));
       console.log();
     }
+  }
+
+  const fused = fuseWithRrf(results, { limit: 3 });
+  console.log(`=== Fused ranking (RRF, top ${fused.length}) ===\n`);
+
+  for (const { document, rrfScore, rank, appearances } of fused) {
+    const querySummary = appearances
+      .map((appearance) => `"${appearance.query}"@${appearance.rank}`)
+      .join(", ");
+
+    console.log(
+      `#${rank}  rrf=${rrfScore.toFixed(3)}  lists=${appearances.length}/${results.length}  module=${document.metadata.module} lecture=${document.metadata.lecture}`,
+    );
+    console.log(`    source: ${document.metadata.source}`);
+    console.log(`    queries: ${querySummary}`);
+    console.log(document.pageContent.slice(0, 300));
+    console.log();
   }
 }
 

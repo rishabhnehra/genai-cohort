@@ -23,6 +23,7 @@
     "@langchain/core": "^1.2.3",
     "@langchain/openai": "^1.5.5",
     "@langchain/textsplitters": "^1.0.1",
+    "fusion-rank": "^0.5.3",
     "openai": "^6.48.0"
   }
 }
