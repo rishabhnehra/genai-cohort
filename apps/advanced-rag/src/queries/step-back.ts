@@ -1,3 +1,4 @@
+import "dotenv/config";
 import OpenAI from "openai";
 
 export type StepBackQueryResult = {
@@ -49,7 +50,9 @@ function createOpenAIClient(): OpenAI {
 }
 
 function resolveModel(options?: GenerateStepBackOptions): string {
-  return options?.model ?? process.env.STEP_BACK_MODEL ?? DEFAULT_STEP_BACK_MODEL;
+  return (
+    options?.model ?? process.env.STEP_BACK_MODEL ?? DEFAULT_STEP_BACK_MODEL
+  );
 }
 
 export async function generateStepBackQuery(
