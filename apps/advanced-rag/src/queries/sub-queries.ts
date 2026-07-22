@@ -1,11 +1,6 @@
 import "dotenv/config";
 import OpenAI from "openai";
 
-export type SubQueriesResult = {
-  originalQuery: string;
-  subQueries: string[];
-};
-
 export type GenerateSubQueriesOptions = {
   model?: string;
   maxSubQueries?: number;
@@ -115,7 +110,10 @@ function parseSubQueriesResponse(
 export async function generateSubQueries(
   userQuery: string,
   options?: GenerateSubQueriesOptions,
-): Promise<SubQueriesResult> {
+): Promise<{
+  originalQuery: string;
+  subQueries: string[];
+}> {
   const trimmedQuery = userQuery.trim();
   if (!trimmedQuery) {
     throw new Error("userQuery must be a non-empty string");
