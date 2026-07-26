@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notebooks     Notebook[]
+  conversations Conversation[]
+  sources       Source[]
+}
+
+model Notebook {
+  id            String    @id @default(cuid())
+  userId        String
+  title         String    @default("Untitled notebook")
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastOpenedAt  DateTime?
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  sources       Source[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@index([userId, lastOpenedAt(sort: Desc)])
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  notebookId    String
+  userId        String
+  title         String    @default("New chat")
+  model         String?
+  systemPrompt  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastMessageAt DateTime?
+
+  notebook Notebook  @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([notebookId, lastMessageAt(sort: Desc)])
+  @@index([userId, lastMessageAt(sort: Desc)])
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  TOOL
+}
+
+enum MessageStatus {
+  PENDING
+  STREAMING
+  COMPLETE
+  FAILED
+  CANCELLED
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  conversationId String
+  role           MessageRole
+  status         MessageStatus @default(COMPLETE)
+  content        String?
+  parts          Json?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt(sort: Desc)])
+}
+
+enum SourceType {
+  PDF
+  SRT
+  WEB
+}
+
+enum SourceStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+  DELETING
+}
+
+enum SourceStage {
+  QUEUED
+  FETCHING
+  EXTRACTING
+  CHUNKING
+  EMBEDDING
+  INDEXING
+  COMPLETE
+  FAILED
+}
+
+model Source {
+  id               String       @id @default(cuid())
+  notebookId       String
+  userId           String
+  type             SourceType
+  title            String
+  originalUrl      String?
+  originalFilename String?
+  mimeType         String?
+  byteSize         Int?
+  checksum         String?
+  storageKey       String?
+  extractedKey     String?
+  status           SourceStatus @default(QUEUED)
+  stage            SourceStage  @default(QUEUED)
+  progress         Int          @default(0)
+  jobId            String?
+  indexVersion     Int          @default(1)
+  retryCount       Int          @default(0)
+  errorCode        String?
+  errorMessage     String?
+  chunkCount       Int?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  indexedAt        DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  notebook Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([notebookId, createdAt(sort: Desc)])
+  @@index([notebookId, status])
+  @@index([userId])
+  @@index([jobId])
+  @@index([checksum])
+}

@@ -13,14 +13,14 @@ import {
 import { UserButton } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@repo/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -34,8 +34,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@repo/ui/sidebar";
+import { Skeleton } from "@repo/ui/skeleton";
 
 import { cn } from "@/lib/utils";
 import {

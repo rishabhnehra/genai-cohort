@@ -1,5 +1,4 @@
 import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
 import styles from "./page.module.css";
 
 type Props = Omit<ImageProps, "src"> & {
@@ -63,9 +62,14 @@ export default function Home() {
             Read our docs
           </a>
         </div>
-        <Button appName="docs" className={styles.secondary}>
-          Open alert
-        </Button>
+        <a
+          href="https://turborepo.dev/docs?utm_source"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.secondary}
+        >
+          Open docs
+        </a>
       </main>
       <footer className={styles.footer}>
         <a

@@ -1,7 +1,7 @@
 "use client";
 
 import { AppSidebar } from "./app-sidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@repo/ui/sidebar";
 
 /**
  * App shell with collapsible sidebar and main content area for chat views.
