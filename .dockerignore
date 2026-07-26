@@ -1,0 +1,38 @@
+# Dependencies (reinstalled inside the image from the pruned lockfile)
+**/node_modules
+
+# Build output / caches
+**/.next
+**/.turbo
+**/dist
+**/out
+**/*.tsbuildinfo
+
+# Generated Prisma client (regenerated during the build)
+**/src/generated
+
+# Local runtime data / uploads
+apps/mocha-lm/.data
+
+# Secrets and env files (provided at runtime, never baked into the image)
+**/.env
+**/.env.*
+!**/.env.example
+
+# VCS / editor / OS
+.git
+.gitignore
+**/.vscode
+**/.idea
+**/.DS_Store
+
+# Tests / coverage / logs
+**/coverage
+**/playwright-report
+**/test-results
+**/*.log
+
+# Docker artifacts
+**/Dockerfile
+**/.dockerignore
+**/docker-compose*.yml
