@@ -46,6 +46,10 @@ export async function POST(request: NextRequest) {
     const { notebookId, message, selectedSourceIds } = parsed.data;
     await checkNotebookExists(notebookId, user.id);
 
+    if (selectedSourceIds.length === 0) {
+      throw new AppError(ErrorCodes.VALIDATION, "No sources selected.");
+    }
+
     let conversation = parsed.data.conversationId
       ? await prisma.conversation.findFirst({
           where: { id: parsed.data.conversationId, userId: user.id, notebookId },
@@ -64,12 +68,13 @@ export async function POST(request: NextRequest) {
 
     const conversationId = conversation.id;
 
+    // Empty selectedSourceIds means "use none" (never silently fall back to all READY).
     const readySources = await prisma.source.findMany({
       where: {
         notebookId,
         userId: user.id,
         status: "READY",
-        ...(selectedSourceIds.length > 0 ? { id: { in: selectedSourceIds } } : {}),
+        id: { in: selectedSourceIds },
       },
       select: { id: true, indexVersion: true },
     });

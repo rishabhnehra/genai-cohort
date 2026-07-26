@@ -138,6 +138,64 @@ Qdrant are all reachable.
 | `test`         | Run unit tests with Vitest                     |
 | `test:e2e`     | Run end-to-end tests with Playwright           |
 
+## Deployment (Docker)
+
+The app ships a production [`Dockerfile`](./Dockerfile) that builds a minimal,
+non-root [Next.js standalone](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)
+image. It is monorepo-aware (`turbo prune` + `outputFileTracingRoot`), runs
+`prisma generate` during the build, and starts the ingestion worker in-process
+via `instrumentation.ts` — one container runs both the web server and the
+worker.
+
+### Build
+
+Build from the **monorepo root** (the context must see workspace packages like
+`@repo/ui`):
+
+```bash
+docker build -f apps/mocha-lm/Dockerfile -t mocha-lm \
+  --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxx \
+  .
+```
+
+`NEXT_PUBLIC_*` values are inlined at build time, so the Clerk publishable key
+is passed as a build arg. Server-only secrets (`CLERK_SECRET_KEY`,
+`OPENROUTER_API_KEY`, `DATABASE_URL`, ...) are **not** baked into the image —
+they are provided at runtime.
+
+### Migrate the database
+
+The Prisma CLI is a dev dependency and is intentionally excluded from the
+runtime image, so migrations are not run by the container. Apply them against
+your target database before first start:
+
+```bash
+pnpm --filter mocha-lm db:deploy
+```
+
+### Run
+
+Point the service URLs at your infrastructure and provide runtime secrets. When
+running against the local `docker-compose` stack from another container, use
+`host.docker.internal` instead of `127.0.0.1`:
+
+```bash
+docker run -p 3002:3002 \
+  -e DATABASE_URL="postgres://postgres:postgres@host.docker.internal:5433/mocha_lm" \
+  -e REDIS_URL="redis://host.docker.internal:6380" \
+  -e QDRANT_URL="http://host.docker.internal:6335" \
+  -e NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxx \
+  -e CLERK_SECRET_KEY=sk_live_xxx \
+  -e OPENROUTER_API_KEY=sk-or-xxx \
+  -v mocha_lm_data:/app/apps/mocha-lm/.data \
+  mocha-lm
+```
+
+Uploaded/extracted source files live on local disk under
+`/app/apps/mocha-lm/.data` (see [`src/lib/storage.ts`](src/lib/storage.ts)); the
+`-v` mount above persists them across restarts. The image exposes port `3002`
+and has a `HEALTHCHECK` that polls the public `/api/health` endpoint.
+
 ## Project layout
 
 ```

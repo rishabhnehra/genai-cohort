@@ -45,7 +45,10 @@ import { MarkdownMessage } from "./markdown-message";
 
 export type ChatPaneProps = {
   notebookId: string;
+  /** READY source IDs currently included in chat context (after opt-out). */
   selectedSourceIds: string[];
+  /** Whether the notebook has any READY sources (even if all are disabled). */
+  hasReadySources: boolean;
   selectedConversationId: string | null | undefined;
   onSelectedConversationIdChange: (id: string | null) => void;
   onCitationClick: (citation: MessageCitation) => void;
@@ -71,13 +74,15 @@ function toRenderable(message: MessageListItem): RenderableMessage {
 }
 
 /**
- * Center workspace pane: streamed chat grounded in the currently-selected
- * sources, with inline [n] citation buttons wired up to the citation viewer.
- * Conversation switching lives in the left pane's Chat History section.
+ * Center workspace pane: streamed chat grounded in the currently-active
+ * sources (READY sources minus any the user disabled), with inline [n]
+ * citation buttons wired up to the citation viewer. Conversation switching
+ * lives in the left pane's Chat History section.
  */
 export function ChatPane({
   notebookId,
   selectedSourceIds,
+  hasReadySources,
   selectedConversationId,
   onSelectedConversationIdChange,
   onCitationClick,
@@ -117,6 +122,18 @@ export function ChatPane({
     })),
   ];
   const hasMessages = allMessages.length > 0;
+
+  const emptyDescription = !hasReadySources
+    ? "Add a source on the left, then ask a question about this notebook."
+    : selectedSourceIds.length === 0
+      ? "Enable at least one source on the left to chat."
+      : "Ask a question — answers will cite exactly where they came from.";
+
+  const inputPlaceholder = !hasReadySources
+    ? "Add a ready source to start chatting..."
+    : selectedSourceIds.length === 0
+      ? "Enable a source to start chatting..."
+      : "Ask a question about your sources...";
 
   function handleSend() {
     const trimmed = input.trim();
@@ -171,9 +188,7 @@ export function ChatPane({
               </EmptyMedia>
               <EmptyTitle>Ask this notebook anything</EmptyTitle>
               <EmptyDescription>
-                {selectedSourceIds.length === 0
-                  ? "Select one or more ready sources on the left to start chatting."
-                  : "Ask a question — answers will cite exactly where they came from."}
+                {emptyDescription}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -200,11 +215,7 @@ export function ChatPane({
 
       <div className="flex shrink-0 items-end gap-2 border-t p-3">
         <Textarea
-          placeholder={
-            selectedSourceIds.length === 0
-              ? "Select a ready source to start chatting..."
-              : "Ask a question about your sources..."
-          }
+          placeholder={inputPlaceholder}
           value={input}
           disabled={selectedSourceIds.length === 0}
           onChange={(event) => setInput(event.target.value)}
@@ -214,7 +225,7 @@ export function ChatPane({
               handleSend();
             }
           }}
-          className="min-h-10 flex-1 resize-none"
+          className="min-h-10 flex-1 resize-none text-base md:text-base"
         />
         <Button size="icon" onClick={handleSend} disabled={!input.trim() || !canAsk}>
           <SendIcon />

@@ -60,6 +60,7 @@ import { ChatPane } from "@/features/chat/components/chat-pane";
 import type { CitationSnapshot } from "@/features/chat/citations";
 import { CitationPane } from "@/features/sources/components/citation-pane";
 import { SourcePane } from "@/features/sources/components/source-pane";
+import { useSources } from "@/features/sources/hooks";
 import {
   useCreateNotebook,
   useDeleteNotebook,
@@ -74,16 +75,18 @@ type Notebook = NonNullable<ReturnType<typeof useNotebooks>["data"]>[number];
 /**
  * Notebook workspace shell: a collapsible notebook-switcher sidebar plus a
  * three-pane (sources / chat / citations) workspace. Panes collapse into
- * sheets on mobile. Owns selected sources, the active conversation, and the
- * active citation that tie the panes together.
+ * sheets on mobile. Owns disabled (opt-out) sources, the active conversation,
+ * and the active citation that tie the panes together. READY sources are
+ * included in chat by default; disables are session-only per notebook.
  */
 export function NotebookShell({ notebookId }: { notebookId: string }) {
   const { data: notebook } = useNotebook(notebookId);
+  const { data: sources } = useSources(notebookId);
   const touchNotebook = useTouchNotebook();
   const isMobile = useIsMobile();
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [citationsOpen, setCitationsOpen] = useState(false);
-  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
+  const [disabledSourceIds, setDisabledSourceIds] = useState<string[]>([]);
   // `undefined` = default to the most recent chat; `null` = explicit new chat.
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null | undefined
@@ -92,14 +95,22 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
 
   // Reset per-notebook state during render (rather than in an effect) when
   // the workspace being viewed changes. See: "Adjusting state when a prop
-  // changes" in the React docs.
+  // changes" in the React docs. New chat does not clear disables.
   const [renderedNotebookId, setRenderedNotebookId] = useState(notebookId);
   if (renderedNotebookId !== notebookId) {
     setRenderedNotebookId(notebookId);
-    setSelectedSourceIds([]);
+    setDisabledSourceIds([]);
     setSelectedConversationId(undefined);
     setActiveCitation(null);
   }
+
+  const readySourceIds =
+    sources?.filter((source) => source.status === "READY").map((source) => source.id) ??
+    [];
+  const hasReadySources = readySourceIds.length > 0;
+  const activeSourceIds = readySourceIds.filter(
+    (id) => !disabledSourceIds.includes(id),
+  );
 
   useEffect(() => {
     touchNotebook.mutate(notebookId);
@@ -165,7 +176,8 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
               <div className="h-full min-h-0">
                 <ChatPane
                   notebookId={notebookId}
-                  selectedSourceIds={selectedSourceIds}
+                  selectedSourceIds={activeSourceIds}
+                  hasReadySources={hasReadySources}
                   selectedConversationId={selectedConversationId}
                   onSelectedConversationIdChange={setSelectedConversationId}
                   onCitationClick={handleCitationClick}
@@ -182,8 +194,8 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
                   </SheetHeader>
                   <SourcePane
                     notebookId={notebookId}
-                    selectedSourceIds={selectedSourceIds}
-                    onSelectedSourceIdsChange={setSelectedSourceIds}
+                    disabledSourceIds={disabledSourceIds}
+                    onDisabledSourceIdsChange={setDisabledSourceIds}
                     selectedConversationId={selectedConversationId}
                     onSelectedConversationIdChange={setSelectedConversationId}
                   />
@@ -226,8 +238,8 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
                 <div className="h-full min-h-0 overflow-hidden border-r">
                   <SourcePane
                     notebookId={notebookId}
-                    selectedSourceIds={selectedSourceIds}
-                    onSelectedSourceIdsChange={setSelectedSourceIds}
+                    disabledSourceIds={disabledSourceIds}
+                    onDisabledSourceIdsChange={setDisabledSourceIds}
                     selectedConversationId={selectedConversationId}
                     onSelectedConversationIdChange={setSelectedConversationId}
                   />
@@ -243,7 +255,8 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
                 <div className="h-full min-h-0 overflow-hidden">
                   <ChatPane
                     notebookId={notebookId}
-                    selectedSourceIds={selectedSourceIds}
+                    selectedSourceIds={activeSourceIds}
+                    hasReadySources={hasReadySources}
                     selectedConversationId={selectedConversationId}
                     onSelectedConversationIdChange={setSelectedConversationId}
                     onCitationClick={handleCitationClick}

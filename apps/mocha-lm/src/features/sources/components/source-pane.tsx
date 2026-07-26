@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   CaptionsIcon,
+  EyeIcon,
+  EyeOffIcon,
   FileTextIcon,
   GlobeIcon,
   Loader2Icon,
@@ -15,7 +17,6 @@ import {
 
 import { Badge } from "@repo/ui/badge";
 import { Button } from "@repo/ui/button";
-import { Checkbox } from "@repo/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -84,21 +85,23 @@ const TYPE_ICON: Record<string, typeof FileTextIcon> = {
 
 export type SourcePaneProps = {
   notebookId: string;
-  selectedSourceIds: string[];
-  onSelectedSourceIdsChange: (ids: string[]) => void;
+  /** Session-only opt-out list; READY sources not listed here are used in chat. */
+  disabledSourceIds: string[];
+  onDisabledSourceIdsChange: (ids: string[]) => void;
   selectedConversationId: string | null | undefined;
   onSelectedConversationIdChange: (id: string | null) => void;
 };
 
 /**
  * Left workspace pane: chat history (switch / start chats) stacked above
- * sources with live ingestion status. Lifts selected sources and the active
- * conversation up to the notebook shell.
+ * sources with live ingestion status. READY sources are included in chat by
+ * default; users can disable individual sources. Disables are session-only
+ * (not persisted) and reset when switching notebooks.
  */
 export function SourcePane({
   notebookId,
-  selectedSourceIds,
-  onSelectedSourceIdsChange,
+  disabledSourceIds,
+  onDisabledSourceIdsChange,
   selectedConversationId,
   onSelectedConversationIdChange,
 }: SourcePaneProps) {
@@ -107,22 +110,26 @@ export function SourcePane({
   const retrySource = useRetrySource(notebookId);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Drop selections for sources that no longer exist (e.g. after delete).
+  // Prune disables for sources that no longer exist or left READY (so a
+  // re-processed source returns active when it becomes READY again).
   useEffect(() => {
     if (!sources) return;
-    const validIds = new Set(sources.map((source) => source.id));
-    const filtered = selectedSourceIds.filter((id) => validIds.has(id));
-    if (filtered.length !== selectedSourceIds.length) {
-      onSelectedSourceIdsChange(filtered);
+    const readyIds = new Set(
+      sources.filter((source) => source.status === "READY").map((source) => source.id),
+    );
+    const filtered = disabledSourceIds.filter((id) => readyIds.has(id));
+    if (filtered.length !== disabledSourceIds.length) {
+      onDisabledSourceIdsChange(filtered);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sources]);
 
-  function toggleSelected(sourceId: string, checked: boolean) {
-    if (checked) {
-      onSelectedSourceIdsChange([...selectedSourceIds, sourceId]);
+  function setSourceDisabled(sourceId: string, disabled: boolean) {
+    if (disabled) {
+      if (disabledSourceIds.includes(sourceId)) return;
+      onDisabledSourceIdsChange([...disabledSourceIds, sourceId]);
     } else {
-      onSelectedSourceIdsChange(selectedSourceIds.filter((id) => id !== sourceId));
+      onDisabledSourceIdsChange(disabledSourceIds.filter((id) => id !== sourceId));
     }
   }
 
@@ -135,22 +142,27 @@ export function SourcePane({
       />
 
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center justify-between border-b p-3">
-          <h2 className="font-heading text-sm font-medium">Sources</h2>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger
-              render={
-                <Button size="icon-sm" variant="ghost" title="Add source" />
-              }
-            >
-              <PlusIcon />
-              <span className="sr-only">Add source</span>
-            </DialogTrigger>
-            <AddSourceDialogContent
-              notebookId={notebookId}
-              onDone={() => setDialogOpen(false)}
-            />
-          </Dialog>
+        <div className="flex shrink-0 flex-col gap-0.5 border-b p-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-sm font-medium">Sources</h2>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger
+                render={
+                  <Button size="icon-sm" variant="ghost" title="Add source" />
+                }
+              >
+                <PlusIcon />
+                <span className="sr-only">Add source</span>
+              </DialogTrigger>
+              <AddSourceDialogContent
+                notebookId={notebookId}
+                onDone={() => setDialogOpen(false)}
+              />
+            </Dialog>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            All ready sources are used unless disabled.
+          </p>
         </div>
 
         <ScrollArea className="flex-1">
@@ -184,8 +196,8 @@ export function SourcePane({
                   <SourceRow
                     key={source.id}
                     source={source}
-                    selected={selectedSourceIds.includes(source.id)}
-                    onToggleSelected={(checked) => toggleSelected(source.id, checked)}
+                    disabledForChat={disabledSourceIds.includes(source.id)}
+                    onSetDisabled={(disabled) => setSourceDisabled(source.id, disabled)}
                     onDelete={() => deleteSource.mutate(source.id)}
                     onRetry={() => retrySource.mutate(source.id)}
                   />
@@ -325,14 +337,14 @@ function ChatHistoryRow({
 
 function SourceRow({
   source,
-  selected,
-  onToggleSelected,
+  disabledForChat,
+  onSetDisabled,
   onDelete,
   onRetry,
 }: {
   source: SourceListItem;
-  selected: boolean;
-  onToggleSelected: (checked: boolean) => void;
+  disabledForChat: boolean;
+  onSetDisabled: (disabled: boolean) => void;
   onDelete: () => void;
   onRetry: () => void;
 }) {
@@ -344,25 +356,15 @@ function SourceRow({
   const description = sourceDescription(source);
 
   return (
-    <Item variant="outline" size="sm" className="flex-col items-stretch gap-2">
+    <Item
+      variant="outline"
+      size="sm"
+      className={cn(
+        "flex-col items-stretch gap-2",
+        disabledForChat && isReady && "opacity-60",
+      )}
+    >
       <div className="flex w-full min-w-0 items-start gap-2.5">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <span className="mt-0.5 shrink-0">
-                <Checkbox
-                  checked={selected}
-                  disabled={!isReady}
-                  onCheckedChange={(checked) => onToggleSelected(checked === true)}
-                />
-              </span>
-            }
-          />
-          <TooltipContent>
-            {isReady ? "Include in chat context" : "Available once processing completes"}
-          </TooltipContent>
-        </Tooltip>
-
         <ItemMedia variant="icon" className="mt-0.5">
           <Icon />
         </ItemMedia>
@@ -370,7 +372,10 @@ function SourceRow({
         <ItemContent className="min-w-0 overflow-hidden">
           <ItemTitle
             title={source.title}
-            className="block w-full min-w-0 truncate"
+            className={cn(
+              "block w-full min-w-0 truncate",
+              disabledForChat && isReady && "line-through",
+            )}
           >
             {source.title}
           </ItemTitle>
@@ -380,7 +385,32 @@ function SourceRow({
         </ItemContent>
 
         <ItemActions className="shrink-0">
-          <StatusBadge status={source.status} />
+          {disabledForChat && isReady ? (
+            <Badge variant="secondary">Disabled</Badge>
+          ) : (
+            <StatusBadge status={source.status} />
+          )}
+          {isReady && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={() => onSetDisabled(!disabledForChat)}
+                  />
+                }
+              >
+                {disabledForChat ? <EyeIcon /> : <EyeOffIcon />}
+                <span className="sr-only">
+                  {disabledForChat ? "Enable for chat" : "Disable for chat"}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {disabledForChat ? "Enable for chat" : "Disable for chat"}
+              </TooltipContent>
+            </Tooltip>
+          )}
           {isFailed && (
             <Tooltip>
               <TooltipTrigger
