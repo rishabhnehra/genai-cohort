@@ -51,8 +51,12 @@ RUN if [ -n "$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" ]; then \
 # ---- runner -----------------------------------------------------------------
 FROM base AS runner
 ENV NODE_ENV=production \
-    PORT=3002 \
-    HOSTNAME=0.0.0.0
+    PORT=3002
+# Next.js reads HOSTNAME for the listen address. Docker/Swarm also injects a
+# HOSTNAME env (container id), which can override a Dockerfile ENV — force it
+# in CMD below. Prefer `::` so Traefik can reach the app over IPv6 (Swarm DNS
+# often returns AAAA); nginx works out of the box because it listens on ::.
+# On Linux this typically accepts IPv4-mapped connections as well.
 
 # Run as an unprivileged user.
 RUN addgroup --system --gid 1001 nodejs \
@@ -76,8 +80,11 @@ WORKDIR /app/apps/mocha-lm
 
 EXPOSE 3002
 
+# Liveness only: the process accepts connections. Do not call /api/health here —
+# that endpoint returns 503 when Postgres/Redis/Qdrant are down, which would mark
+# the container unhealthy and make Dokploy/Traefik return 502 even though Node is up.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3002/api/health || exit 1
+    CMD node -e "require('net').connect({port:3002,host:'127.0.0.1'},()=>process.exit(0)).on('error',()=>process.exit(1))"
 
-# The ingestion worker starts automatically via instrumentation.ts.
-CMD ["node", "server.js"]
+# Force listen address at process start (see HOSTNAME note above).
+CMD ["sh", "-c", "HOSTNAME=:: node server.js"]
