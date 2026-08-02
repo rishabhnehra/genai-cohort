@@ -89,6 +89,8 @@ export type SourcePaneProps = {
   disabledSourceIds: string[];
   onDisabledSourceIdsChange: (ids: string[]) => void;
   selectedConversationId: string | null | undefined;
+  /** Highlights a persisted draft chat while selectedConversationId stays null. */
+  highlightConversationId?: string;
   onSelectedConversationIdChange: (id: string | null) => void;
 };
 
@@ -103,6 +105,7 @@ export function SourcePane({
   disabledSourceIds,
   onDisabledSourceIdsChange,
   selectedConversationId,
+  highlightConversationId,
   onSelectedConversationIdChange,
 }: SourcePaneProps) {
   const { data: sources, isLoading } = useSources(notebookId);
@@ -138,6 +141,7 @@ export function SourcePane({
       <ChatHistorySection
         notebookId={notebookId}
         selectedConversationId={selectedConversationId}
+        highlightConversationId={highlightConversationId}
         onSelectedConversationIdChange={onSelectedConversationIdChange}
       />
 
@@ -214,20 +218,30 @@ export function SourcePane({
 function ChatHistorySection({
   notebookId,
   selectedConversationId,
+  highlightConversationId,
   onSelectedConversationIdChange,
 }: {
   notebookId: string;
   selectedConversationId: string | null | undefined;
+  highlightConversationId?: string;
   onSelectedConversationIdChange: (id: string | null) => void;
 }) {
   const { data: conversations, isLoading } = useConversations(notebookId);
   const deleteConversation = useDeleteConversation(notebookId);
 
+  const highlightInList = Boolean(
+    highlightConversationId &&
+      conversations?.some((conversation) => conversation.id === highlightConversationId),
+  );
   const activeConversationId =
-    selectedConversationId === undefined
+    (highlightInList ? highlightConversationId : undefined) ??
+    (selectedConversationId === undefined
       ? conversations?.[0]?.id
-      : (selectedConversationId ?? undefined);
-  const isNewChat = selectedConversationId === null;
+      : (selectedConversationId ?? undefined));
+  // Keep the draft row until the persisted conversation is in the list so the
+  // highlight never disappears for a frame during the draft → saved handoff.
+  const isNewChat =
+    selectedConversationId === null && !highlightInList;
 
   return (
     <div className="flex max-h-[45%] min-h-0 shrink-0 flex-col border-b">

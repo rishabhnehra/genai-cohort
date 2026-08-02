@@ -115,6 +115,37 @@ export function formatCitationLocation(locator: CitationLocator): string {
   return describeLocator(locator);
 }
 
+/** Short locator summary for inline citation hover cards / Sources rows. */
+export function formatCitationLocatorSummary(locator: CitationLocator): string {
+  switch (locator.kind) {
+    case "pdf":
+      return `Page ${locator.page}`;
+    case "srt":
+      return formatSrtTimestamp(locator.startMs);
+    case "web": {
+      if (locator.heading) return locator.heading;
+      try {
+        return new URL(locator.url).hostname;
+      } catch {
+        return locator.url;
+      }
+    }
+  }
+}
+
+/** Public URL when the citation is a web source; otherwise undefined. */
+export function citationPublicUrl(citation: MessageCitation): string | undefined {
+  return citation.locator.kind === "web" ? citation.locator.url : undefined;
+}
+
+/**
+ * Unique citations for the Sources list under an assistant message,
+ * deduped by source location and ordered by citation index.
+ */
+export function uniqueCitationsForSources(citations: MessageCitation[]): MessageCitation[] {
+  return collapseCitationsByLocation(citations);
+}
+
 /** Renders numbered excerpts (`[1] (title — location)\n...text...`) for the grounded system prompt. */
 export function formatContextBlock(chunks: RetrievedChunk[]): string {
   return chunks

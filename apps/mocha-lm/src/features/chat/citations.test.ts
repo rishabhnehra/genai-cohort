@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   buildCitationsFromChunks,
   canonicalizeCitationIndexes,
+  citationPublicUrl,
   collapseCitationsByLocation,
   extractUsedCitations,
+  formatCitationLocatorSummary,
   formatContextBlock,
   normalizeCitedAnswer,
   parseCitations,
+  uniqueCitationsForSources,
   validateCitations,
 } from "./citations";
+import type { MessageCitation } from "./citations";
 import type { RetrievedChunk } from "@/features/retrieval/types";
 
 function chunk(
@@ -123,5 +127,48 @@ describe("formatContextBlock", () => {
     const block = formatContextBlock([chunk("c1", "s1")]);
     expect(block).toContain("[1] (Source s1 — page 1)");
     expect(block).toContain("Excerpt text for c1");
+  });
+});
+
+describe("formatCitationLocatorSummary / citationPublicUrl", () => {
+  it("formats PDF pages for hover cards", () => {
+    expect(formatCitationLocatorSummary({ kind: "pdf", page: 19 })).toBe("Page 19");
+  });
+
+  it("returns web URL only for web citations", () => {
+    const web: MessageCitation = {
+      index: 1,
+      chunkId: "c1",
+      sourceId: "s1",
+      sourceType: "WEB",
+      sourceTitle: "Example",
+      locator: { kind: "web", url: "https://example.com/doc", excerpt: "hi" },
+    };
+    const pdf: MessageCitation = {
+      index: 2,
+      chunkId: "c2",
+      sourceId: "s2",
+      sourceType: "PDF",
+      sourceTitle: "Paper",
+      locator: { kind: "pdf", page: 3, excerpt: "hi" },
+    };
+
+    expect(citationPublicUrl(web)).toBe("https://example.com/doc");
+    expect(citationPublicUrl(pdf)).toBeUndefined();
+    expect(formatCitationLocatorSummary(web.locator)).toBe("example.com");
+  });
+});
+
+describe("uniqueCitationsForSources", () => {
+  it("dedupes by location for the Sources list", () => {
+    const citations = buildCitationsFromChunks([
+      chunk("c1", "s1", 19),
+      chunk("c2", "s1", 19),
+      chunk("c3", "s2", 1),
+    ]);
+
+    const unique = uniqueCitationsForSources(citations);
+    expect(unique).toHaveLength(2);
+    expect(unique.map((c) => c.index)).toEqual([1, 3]);
   });
 });

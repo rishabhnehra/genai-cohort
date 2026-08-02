@@ -91,7 +91,20 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null | undefined
   >(undefined);
+  // Sidebar highlight for a draft chat that persisted without switching selection.
+  const [draftActiveConversationId, setDraftActiveConversationId] = useState<
+    string | undefined
+  >();
   const [activeCitation, setActiveCitation] = useState<CitationSnapshot | null>(null);
+
+  function handleSelectedConversationIdChange(id: string | null) {
+    setSelectedConversationId(id);
+    setDraftActiveConversationId(undefined);
+  }
+
+  function handleDraftConversationPersisted(conversationId: string) {
+    setDraftActiveConversationId(conversationId);
+  }
 
   // Reset per-notebook state during render (rather than in an effect) when
   // the workspace being viewed changes. See: "Adjusting state when a prop
@@ -101,6 +114,7 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
     setRenderedNotebookId(notebookId);
     setDisabledSourceIds([]);
     setSelectedConversationId(undefined);
+    setDraftActiveConversationId(undefined);
     setActiveCitation(null);
   }
 
@@ -179,7 +193,8 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
                   selectedSourceIds={activeSourceIds}
                   hasReadySources={hasReadySources}
                   selectedConversationId={selectedConversationId}
-                  onSelectedConversationIdChange={setSelectedConversationId}
+                  onSelectedConversationIdChange={handleSelectedConversationIdChange}
+                  onDraftConversationPersisted={handleDraftConversationPersisted}
                   onCitationClick={handleCitationClick}
                 />
               </div>
@@ -197,7 +212,8 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
                     disabledSourceIds={disabledSourceIds}
                     onDisabledSourceIdsChange={setDisabledSourceIds}
                     selectedConversationId={selectedConversationId}
-                    onSelectedConversationIdChange={setSelectedConversationId}
+                    highlightConversationId={draftActiveConversationId}
+                    onSelectedConversationIdChange={handleSelectedConversationIdChange}
                   />
                 </SheetContent>
               </Sheet>
@@ -241,7 +257,8 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
                     disabledSourceIds={disabledSourceIds}
                     onDisabledSourceIdsChange={setDisabledSourceIds}
                     selectedConversationId={selectedConversationId}
-                    onSelectedConversationIdChange={setSelectedConversationId}
+                    highlightConversationId={draftActiveConversationId}
+                    onSelectedConversationIdChange={handleSelectedConversationIdChange}
                   />
                 </div>
               </ResizablePanel>
@@ -258,7 +275,8 @@ export function NotebookShell({ notebookId }: { notebookId: string }) {
                     selectedSourceIds={activeSourceIds}
                     hasReadySources={hasReadySources}
                     selectedConversationId={selectedConversationId}
-                    onSelectedConversationIdChange={setSelectedConversationId}
+                    onSelectedConversationIdChange={handleSelectedConversationIdChange}
+                    onDraftConversationPersisted={handleDraftConversationPersisted}
                     onCitationClick={handleCitationClick}
                   />
                 </div>
