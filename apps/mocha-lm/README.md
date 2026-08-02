@@ -107,8 +107,9 @@ pnpm --filter mocha-lm dev
 ```
 
 This starts the Next.js app at `http://localhost:3002`. The ingestion worker
-is started automatically via `instrumentation.ts` when the Node.js runtime
-boots — you do not need a separate process in development.
+is started automatically via `src/instrumentation.ts` when the Node.js runtime
+boots — you do not need a separate process in development. On startup you
+should see `From register(), nodejs` and `worker starting` in the terminal.
 
 To run the worker as a standalone process (e.g. for production scaling):
 
@@ -144,8 +145,12 @@ The app ships a production [`Dockerfile`](./Dockerfile) that builds a minimal,
 non-root [Next.js standalone](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)
 image. It is monorepo-aware (`turbo prune` + `outputFileTracingRoot`), runs
 `prisma generate` during the build, and starts the ingestion worker in-process
-via `instrumentation.ts` — one container runs both the web server and the
-worker.
+via `src/instrumentation.ts` — one container runs both the web server and the
+worker. The hook must live under `src/` (not the project root) so the
+standalone `node server.js` process loads it in production. After deploy,
+container logs should show `From register(), nodejs` and `worker starting`;
+uploads then move `QUEUED → PROCESSING → READY`. Confirm Redis/Qdrant with
+`/api/health` if jobs still stall.
 
 ### Build
 
@@ -226,6 +231,7 @@ apps/mocha-lm
 │   │   └── chat/           # conversation CRUD, streaming hook, citations, chat pane
 │   ├── lib/                # env, db, redis, qdrant, storage, errors, limits, openrouter
 │   ├── proxy.ts             # Clerk middleware
+│   ├── instrumentation.ts   # boots ingestion worker inside Next (standalone + dev)
 │   └── worker.ts            # ingestion worker entrypoint
 └── .data/                    # local disk storage for uploads/extracted text (gitignored)
 ```
