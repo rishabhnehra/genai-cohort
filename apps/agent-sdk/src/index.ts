@@ -2,12 +2,21 @@ import { Agent, type Tool } from "./agent.js";
 import { cliAccessTool, weatherTool } from "./tools.js";
 
 async function main() {
+  const weatherAgent = Agent.builder()
+    .setName("weather_agent")
+    .setInstructions(
+      "You are an weather assistant that can answer questions related to weather",
+    )
+    .tool(weatherTool)
+    .build();
+
   const agent = Agent.builder()
+    .setName("main")
     .setInstructions(
       "You are a helpful assistant that can answer questions and help with tasks.",
     )
-    .tool(weatherTool)
     .tool(cliAccessTool)
+    .handoffAgent(weatherAgent)
     .build();
 
   agent.attachInterceptor((message) => {
@@ -35,9 +44,7 @@ async function main() {
     console.info(`${emoji}: ${content}`);
   });
 
-  const response = await agent.run(
-    "Create a simple hello world program in cpp in current directory",
-  );
+  const response = await agent.run("Whats the weather of Jamnagar ?");
   // console.log(response);
 }
 

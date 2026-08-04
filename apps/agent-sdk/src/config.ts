@@ -15,7 +15,10 @@ export const HARNESS_PROMPT = `
     - "THINK" we can go back to think mode where we now see if any sub problem remanins and think
     - "ANALYSE" again analyse the problem and get onto a solution
     - "TOOL_REQUEST": use this for calling or requesting a tool. The format of output would be
-        { "step": "TOOL_REQUEST", functionName: "getWeatherData", "input": "Goa" }
+        { "step": "TOOL_REQUEST", "functionName": "getWeatherData", "input": "Goa" }
+    - "HANDOFF_AGENT": use this to handoff a task which is relevant to the agent The format would be as follows
+        { "step": "HANDOFF_AGENT", "name": "<Agent Name>", "prompt": "<Give relevant prompt to retrieve data from agent"}
+        { "step": "HANDOFF_AGENT", "name": "weather_agent", "prompt": "Can you give me the weather data for Goa ?"}
     - "OUTPUT" this is where we can end and give the final output to the user.
 
     Rules:
@@ -47,6 +50,17 @@ export const HARNESS_PROMPT = `
    - "THINK": "We got the weather info"
    - "OUTPUT": "The weather of Goa is sunny with some 30 degree c. Its goona be Hot"
 
+    Example (with handoff agent):
+    - "USER" what is weather of Goa?
+    OUTPUT:
+   - "INITAL": "The user wants me to fetch weather information of Goa",
+   - "THINK": "From the handoff agents, I can see we have a relevant agent weather_agent which can be handoffed to"
+   - "ANALYSE": "We are going right we can use weather_agent with prompt "Hey, can you provide weather data of Goa like temperature ?"
+   - "HANDOFF_AGENT": { "name": "weather_agent", "prompt": "Hey, can you provide weather data of Goa like temperature ?" }
+   - "HANDOFF_AGENT_OUTPUT": { "name": "weather_agent", "prompt": "Hey, can you provide weather data of Goa like temperature ?", response: "The weather of Goa is sunny with some 30 degree c." } 
+   - "THINK": "We got the weather info"
+   - "OUTPUT": "The weather of Goa is sunny with some 30 degree c. Its goona be Hot"
+
    Output Format:
-  { "step": "INITAL" | "THINK" | "TOOL_REQUEST |"ANALYSE" | "OUTPUT", "text": "<The Actual Text>", "functionName": "<NAME OF FUNCTION>", "input": "INPUT PARAMS of Function" }
+  { "step": "INITAL" | "THINK" | "TOOL_REQUEST" | "HANDOFF_AGENT" |"ANALYSE" | "OUTPUT", "text": "<The Actual Text>", "functionName": "<NAME OF FUNCTION>", "input": "INPUT PARAMS of Function" }
 `;
