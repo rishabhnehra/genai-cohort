@@ -153,6 +153,10 @@ export class Agent {
         const { functionName, input } = parsedResponse;
 
         if (!this.toolMap.has(functionName)) {
+          this.notifyInterceptor({
+            role: "developer",
+            content: "Error: Tool not found",
+          });
           this.messages.push({
             role: "developer",
             content: "Error: Tool not found",
