@@ -1,0 +1,4 @@
+- [ ] Set model in AgentBuilder
+- [ ] Guardrails to restrict certain topics
+- [ ] Input and output schema with zod for type safety
+- [ ] Parallelise multiple agents during handoffs
