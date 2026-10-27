@@ -27,7 +27,7 @@ export const HARNESS_PROMPT = `
     - Always follow JSON output format strictly.
 
     Example:
-  - "USER": What is 2 + 2 - 5 * 10 / 3?
+    - "USER": What is 2 + 2 - 5 * 10 / 3?
     OUTPUT:
     - "INITAL": "The user wants me to solve a maths equation"
     - "THINK": "I will use the BODMAS formula and based on that I should firt multiple 5 * 10 which is 50"
@@ -42,24 +42,24 @@ export const HARNESS_PROMPT = `
     Example:
     - "USER" what is weather of Goa?
     OUTPUT:
-   - "INITAL": "The user wants me to fetch weather information of Goa",
-   - "THINK": "From the tools I can see we have a tool named getWeatherData which can be called"
-   - "ANALYSE": "We are going right we can call getWeatherData with "GOA" as input"
-   - "TOOL_REQUEST": { "functionName": "getWeatherData", "input": "goa" }
-   - "TOOL_OUTPUT": The weather of Goa is sunny with some 30 degree c.
-   - "THINK": "We got the weather info"
-   - "OUTPUT": "The weather of Goa is sunny with some 30 degree c. Its goona be Hot"
+    - "INITAL": "The user wants me to fetch weather information of Goa",
+    - "THINK": "From the tools I can see we have a tool named getWeatherData which can be called"
+    - "ANALYSE": "We are going right we can call getWeatherData with "GOA" as input"
+    - "TOOL_REQUEST": { "functionName": "getWeatherData", "input": "goa" }
+    - "TOOL_OUTPUT": The weather of Goa is sunny with some 30 degree c.
+    - "THINK": "We got the weather info"
+    - "OUTPUT": "The weather of Goa is sunny with some 30 degree c. Its goona be Hot"
 
     Example (with handoff agent):
     - "USER" what is weather of Goa?
     OUTPUT:
-   - "INITAL": "The user wants me to fetch weather information of Goa",
-   - "THINK": "From the handoff agents, I can see we have a relevant agent weather_agent which can be handoffed to"
-   - "ANALYSE": "We are going right we can use weather_agent with prompt "Hey, can you provide weather data of Goa like temperature ?"
-   - "HANDOFF_AGENT": { "name": "weather_agent", "prompt": "Hey, can you provide weather data of Goa like temperature ?" }
-   - "HANDOFF_AGENT_OUTPUT": { "name": "weather_agent", "prompt": "Hey, can you provide weather data of Goa like temperature ?", response: "The weather of Goa is sunny with some 30 degree c." } 
-   - "THINK": "We got the weather info"
-   - "OUTPUT": "The weather of Goa is sunny with some 30 degree c. Its goona be Hot"
+    - "INITAL": "The user wants me to fetch weather information of Goa",
+    - "THINK": "From the handoff agents, I can see we have a relevant agent weather_agent which can be handoffed to"
+    - "ANALYSE": "We are going right we can use weather_agent with prompt "Hey, can you provide weather data of Goa like temperature ?"
+    - "HANDOFF_AGENT": { "name": "weather_agent", "prompt": "Hey, can you provide weather data of Goa like temperature ?" }
+    - "HANDOFF_AGENT_OUTPUT": { "name": "weather_agent", "prompt": "Hey, can you provide weather data of Goa like temperature ?", response: "The weather of Goa is sunny with some 30 degree c." } 
+    - "THINK": "We got the weather info"
+    - "OUTPUT": "The weather of Goa is sunny with some 30 degree c. Its goona be Hot"
 
    Output Format:
   { "step": "INITAL" | "THINK" | "TOOL_REQUEST" | "HANDOFF_AGENT" |"ANALYSE" | "OUTPUT", "text": "<The Actual Text>", "functionName": "<NAME OF FUNCTION>", "input": "INPUT PARAMS of Function" }

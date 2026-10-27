@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { HARNESS_PROMPT } from "./config.js";
 import OpenAI from "openai";
+import type { ChatModel } from "openai/resources";
 
 interface Message {
   role: "user" | "assistant" | "developer";
@@ -17,15 +18,19 @@ export interface Tool {
 type Interceptor = (message: Message) => void;
 
 class AgentBuilder {
+  public model: ChatModel;
   public name: string | undefined;
   public instructions: string | undefined;
   public tools: Tool[];
   public handoffs: Agent[];
+  public inputGuardrails: Agent[];
 
   // Addressed one error where TS explicitly added undefined to "tools"
   constructor() {
+    this.model = "gpt-4o";
     this.tools = [];
     this.handoffs = [];
+    this.inputGuardrails = [];
   }
 
   public setName(name: string) {
@@ -35,6 +40,11 @@ class AgentBuilder {
 
   public setInstructions(instructions: string) {
     this.instructions = instructions;
+    return this;
+  }
+
+  public setModel(model: ChatModel) {
+    this.model = model;
     return this;
   }
 
@@ -55,6 +65,7 @@ class AgentBuilder {
 
 export class Agent {
   public name: string;
+  private model: ChatModel;
   private instructions: string | undefined;
   private messages: Message[];
   private toolMap: Map<string, Tool>;
@@ -69,6 +80,7 @@ export class Agent {
     this.interceptors = [];
     this.toolMap = new Map();
     this.handoffMap = new Map();
+    this.model = builder.model;
     this.openAi = new OpenAI({
       apiKey: process.env.OpenAI,
       baseURL: "https://openrouter.ai/api/v1",
@@ -122,7 +134,7 @@ export class Agent {
     });
     for (let i = 0; i < this.MAX_LOOP; i++) {
       const llmResponse = await this.openAi.chat.completions.create({
-        model: "gpt-4o",
+        model: this.model,
         messages: [
           { role: "system", content: this.getInstruction() },
           ...this.messages.map((message) => ({

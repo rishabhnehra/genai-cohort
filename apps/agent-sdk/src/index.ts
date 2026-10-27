@@ -44,7 +44,9 @@ async function main() {
     console.info(`${emoji}: ${content}`);
   });
 
-  const response = await agent.run("Whats the weather of Jamnagar ?");
+  const response = await agent.run(
+    "Whats the weather of Jamnagar, Ahmedabad and Pune ?",
+  );
   // console.log(response);
 }
 
